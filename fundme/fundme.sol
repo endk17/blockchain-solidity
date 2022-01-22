@@ -10,6 +10,13 @@ contract FundMe {
     using SafeMathChainlink for uint256;
 
     mapping(address => uint256) public addressToAmountFunded;
+    
+    address[] public funders;
+    address public owner;
+
+    constructor() public {
+        owner = msg.sender;
+    }
 
     function fund() public payable {
         // min val
@@ -18,6 +25,7 @@ contract FundMe {
 
         addressToAmountFunded[msg.sender] += msg.value;
         // need to know ETH -> USD conversion rate
+        funders.push(msg.sender);
      }
 
     //function to get the version of the chainlink pricefeed
@@ -40,5 +48,21 @@ contract FundMe {
 
         // ETH/USD conversation rate, after adjusting the extra 0s.
         return ethAmountInUsd;
+    }
+
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
+
+    // call above modifier to perform pre-condition
+    function withdraw() payable onlyOwner public {
+        msg.sender.transfer(address(this).balance);
+
+        for (uint256 funderIndex=0; funderIndex < funders.lenght; funderIndex++){
+            address funder = funders[funderIndex];
+            addressToAmountFunded[funder] = 0;
+        }
+        funders = new address[](0);
     }
 }
