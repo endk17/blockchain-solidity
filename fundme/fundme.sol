@@ -7,10 +7,15 @@ import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.6/vendor/SafeMathChainlink.sol";
 
 contract FundMe {
+    using SafeMathChainlink for uint256;
 
     mapping(address => uint256) public addressToAmountFunded;
 
     function fund() public payable {
+        // min val
+        uint256 minimumUSD = 50 * 10 ** 18;
+        require(getConversionRate(msg.value) >= minimumUSD, "Minimum spend is not met!");
+
         addressToAmountFunded[msg.sender] += msg.value;
         // need to know ETH -> USD conversion rate
      }
@@ -26,5 +31,14 @@ contract FundMe {
         (,int256 answer,,,) = priceFeed.latestRoundData();
          // ETH/USD rate in 18 digit 
          return uint256(answer * 10000000000);
+    }
+
+    // 1000000000
+    function getConversionRate(uint256 ethAmount) public view returns (uint256){
+        uint256 ethPrice = getPrice();
+        uint256 ethAmountInUsd = (ethPrice * ethAmount) / 1000000000000000000;
+
+        // ETH/USD conversation rate, after adjusting the extra 0s.
+        return ethAmountInUsd;
     }
 }
